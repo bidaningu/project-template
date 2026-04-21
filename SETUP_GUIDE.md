@@ -23,6 +23,13 @@
 - TIMELINE.md에 첫 세션 기록
 - 사용자와 첫 작업 범위 확인 후 진행
 
+### Step 5. (선택) 일지 자동화 활성
+- `.context/journal/README.md` 읽기
+- `.context/journal/cron-setup.md` 따라 `/schedule` 로 2개 cron 등록
+  - `<project>-daily-journal` (매일 KST 00:00)
+  - `<project>-weekly-review` (매주 금 KST 18:00)
+- `{{PROJECT}}` 플레이스홀더 치환 확인
+
 ## 체크리스트
 - [ ] CLAUDE.md 프로젝트 정보 입력
 - [ ] RULES.md 규칙/기술 스택 정의
@@ -30,3 +37,4 @@
 - [ ] TIMELINE.md 첫 세션 기록
 - [ ] MEMORY.md에 프로젝트 등록
 - [ ] .context/ 폴더 확인
+- [ ] (선택) `.context/journal/` 검토 + cron 등록
