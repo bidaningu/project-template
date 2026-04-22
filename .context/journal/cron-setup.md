@@ -25,20 +25,29 @@
 
 **프롬프트 (프로젝트명/경로만 교체):**
 ```
-당신은 {{PROJECT}} 프로젝트의 '일일 회고'를 매일 KST 00:00 에 작성하는 원격 Claude 에이전트입니다. 이전 맥락 없음 → 먼저 현황 파악.
+당신은 {{PROJECT}} 프로젝트의 '일일 회고'를 매일 KST 00:00 에 작성하는 원격 Claude 에이전트입니다. 이전 맥락 없음.
+
+## ⚠️ 실행 시각 인지 (반드시 먼저)
+LLM 자체는 현재 시각을 모름. 반드시 bash 로 확인:
+```bash
+NOW_KST=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M %Z')
+TODAY_KST=$(TZ=Asia/Seoul date '+%Y-%m-%d')
+YDAY_KST=$(TZ=Asia/Seoul date -d "yesterday" '+%Y-%m-%d')
+echo "now=$NOW_KST today=$TODAY_KST yesterday=$YDAY_KST"
+```
+확인한 $YDAY_KST 가 대상 날짜. 자정 직후 실행이므로 '어제 KST' = 24시간 전 세션 전체.
 
 ## 단계
 1. git log --since="24 hours ago" --all --pretty=format:'%h %ad %s' --date=iso | head -50
-2. TIMELINE.md 최근 세션 읽기 (최신이 위)
-3. WORKTREES.md 가 있으면 활성/병합완료/블록 훑기
-4. 대상 날짜 = 실행 시점 기준 '어제 KST'
-5. 어제 커밋 0건이면 종료 (파일 생성 X)
+2. TIMELINE.md 최근 세션 (최신이 위)
+3. WORKTREES.md 가 있으면 활성/병합완료/블록
+4. 어제 커밋 0건이면 종료 (파일 생성 X)
 
 ## 작성 파일
-.context/journal/YYYY-MM-DD.md (없으면 디렉토리 생성)
+.context/journal/$YDAY_KST.md (없으면 디렉토리 생성)
 
 ## 포맷
-# YYYY-MM-DD (요일) 일일 회고
+# $YDAY_KST (요일) 일일 회고
 ## ① 요약 (2~3문장)
 ## ② 완료 — [영역] 작업 — <SHA>
 ## ③ 진행 중
@@ -47,12 +56,13 @@
 ## ⑥ 개선 제안 + 반영 위치 [rule|memory|script|CLAUDE.md|기타]
 
 ## 완료 후
-git add .context/journal/<파일>
-git commit -m "docs(journal): YYYY-MM-DD 일일 회고"
+git add .context/journal/$YDAY_KST.md
+git commit -m "docs(journal): $YDAY_KST 일일 회고"
 git push origin main
 
 ## 주의
 - 로컬 머신/DB/로컬 env 접근 불가. git repo 내용만.
+- date 명령이 GNU date(Linux) 전제. BSD 환경이면 `date -v-1d` 사용.
 - 관찰 기반만. 추측·희망 금지.
 ```
 
@@ -67,19 +77,30 @@ git push origin main
 
 **프롬프트:**
 ```
-당신은 {{PROJECT}} 프로젝트의 '주간 회고'를 매주 금요일 KST 18:00 에 작성하는 원격 Claude 에이전트입니다. 맥락 없이 시작 → 현황 파악.
+당신은 {{PROJECT}} 프로젝트의 '주간 회고'를 매주 금요일 KST 18:00 에 작성하는 원격 Claude 에이전트입니다. 맥락 없이 시작.
+
+## ⚠️ 실행 시각 인지 (반드시 먼저)
+```bash
+NOW_KST=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M %Z')
+YEAR=$(TZ=Asia/Seoul date '+%Y')
+ISO_WEEK=$(TZ=Asia/Seoul date '+%V')
+WEEK_TAG="${YEAR}-W${ISO_WEEK}"
+WEEK_START=$(TZ=Asia/Seoul date -d "last monday -6 days" '+%Y-%m-%d' 2>/dev/null || TZ=Asia/Seoul date -d "monday-6 days" '+%Y-%m-%d')
+WEEK_END=$(TZ=Asia/Seoul date '+%Y-%m-%d')
+echo "now=$NOW_KST tag=$WEEK_TAG range=$WEEK_START~$WEEK_END"
+```
 
 ## 단계
-1. ls .context/journal/*.md 2>/dev/null | tail -7 → 최근 7일치 일일 회고 Read
+1. ls .context/journal/*.md 2>/dev/null | tail -7 → 최근 7일치 Read
 2. git log --since="7 days ago" --pretty=format:'%h %ad %s' --date=short
 3. TIMELINE.md 이번 주 세션
 4. MEMORY.md 이번 주 새 feedback 유무
 
 ## 작성 파일
-.context/journal/weekly/YYYY-WW.md (ISO 주차)
+.context/journal/weekly/$WEEK_TAG.md
 
 ## 포맷
-# YYYY-WW 주간 회고 (M/D ~ M/D)
+# $WEEK_TAG 주간 회고 ($WEEK_START ~ $WEEK_END)
 ## 지표 - 커밋 N / 활성 워크트리 N / 완료 N / 일일회고 N
 ## 반복되는 블록 패턴 - 패턴 — 빈도 — 근본 원인
 ## 소통·맥락 이슈 - 패턴 — 예시 일자
@@ -91,8 +112,8 @@ git push origin main
 개선안은 repo 내 MEMORY.md 에. 원격 에이전트는 ~/.claude/projects/.../memory/ 접근 불가.
 
 ## 완료 후
-git add .context/journal/weekly/<파일> MEMORY.md
-git commit -m "docs(journal): YYYY-WW 주간 회고 + rule 반영"
+git add .context/journal/weekly/$WEEK_TAG.md MEMORY.md
+git commit -m "docs(journal): $WEEK_TAG 주간 회고 + rule 반영"
 git push origin main
 ```
 
